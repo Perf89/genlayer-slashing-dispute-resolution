@@ -1,0 +1,11 @@
+EXAMPLECHAIN SLASHING RECORD (synthetic test document)
+
+Event: slashing
+Validator: 0x42 (operator: NodeCo)
+Height: 4,120,771
+Reason code: DOUBLE_SIGN
+Penalty: 5% of bonded stake
+
+This record states that the validator was slashed and the reason code applied
+by the protocol. It does not describe how or why the double-signing signal
+arose.
