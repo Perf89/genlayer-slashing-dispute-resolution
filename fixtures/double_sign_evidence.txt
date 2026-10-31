@@ -1,0 +1,15 @@
+EXAMPLECHAIN EVIDENCE OF DOUBLE-SIGNING (synthetic test document)
+
+Validator: 0x42 (operator: NodeCo)
+Height: 4,120,771
+
+Two conflicting precommits were signed with the same validator key at the same
+height and round, broadcast from two different peers:
+- peer A: 203.0.113.10 (the operator's primary node)
+- peer B: 198.51.100.77 (the operator's standby node, started during a failover
+  test at 02:14 UTC)
+
+The operator's own maintenance notice from 02:00 UTC states that the standby
+node was brought up with the production signing key to test failover. No
+network-wide incident or client bug was reported for this height by the core
+team, and other validators at this height show a single signing peer.
