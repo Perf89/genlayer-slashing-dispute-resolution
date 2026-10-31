@@ -1,0 +1,19 @@
+EXAMPLECHAIN CORE TEAM: POST-MORTEM OF THE v2.3 SLASHING INCIDENT (synthetic test document)
+
+Summary: between heights 4,120,000 and 4,121,500, 61 validators running node
+release v2.3.0 were slashed 5% for double-signing, although each of them ran a
+single signing instance. The cause was a bug in v2.3.0: after a database
+compaction the client re-sent its previous vote with a new timestamp, which the
+network read as a second, conflicting vote.
+
+Findings:
+- The bug is in the client release, confirmed by the core team and reproduced
+  on a clean single-node testnet.
+- Affected validators show one signing peer only. No second instance of any
+  affected key was ever connected.
+- Validator 0x42 (operator: NodeCo) ran v2.3.0, was slashed at height 4,120,771
+  and had a single signing peer at that time.
+
+Resolution: release v2.3.1 fixes the bug. The core team classifies all 61
+slashing events in this window as caused by a client bug, not by operator
+error.
