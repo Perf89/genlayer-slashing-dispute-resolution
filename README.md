@@ -1,4 +1,3 @@
-[README_slashing_dispute_resolution.md](https://github.com/user-attachments/files/34624469/README_slashing_dispute_resolution.md)
 # Slashing Dispute Resolution
 
 A standalone GenLayer Intelligent Contract primitive submitted for the **Standalone Contracts** track.
