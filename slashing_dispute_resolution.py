@@ -42,6 +42,16 @@ Consensus design (Equivalence Principle, independent comparison)
     verdicts also means both percentages lie on the same side of 50, so the
     stored outcome never depends on which validator happened to lead.
 
+Appeals are a fresh review
+    An appeal does not review the first ruling, it decides the case again. The
+    appeal prompt contains the terms, both evidence pages and the appealing
+    party's statement, which every validator reads identically from the
+    chain. It deliberately does not contain the first round's ruling or its
+    reasoning: that text is written by one leader and never compared between
+    validators, so reusing it would let two equally valid first rounds push
+    the final appeal in different directions. Stored reasoning is for humans
+    and integrators, and is never an input to a later adjudication.
+
 Burden of proof
     The slashing already happened, so the operator carries the burden of
     showing that a cause excluded by the terms applies. Missing, vague or
@@ -159,6 +169,19 @@ def _losing_party(status: str) -> str:
     return "claimant" if status == "upheld" else "respondent"
 
 
+def _appeal_context(appeal_by: str, appeal_statement: str) -> str:
+    """Context for an appeal round.
+
+    Built only from inputs that every validator reads identically from the
+    chain: which side appealed, and what that side wrote. It deliberately takes
+    no ruling text. The first round's reasoning is written by one leader and is
+    never compared between validators, so feeding it back would let two equally
+    valid first rounds push the final appeal in different directions. The
+    appeal is a fresh review of the terms and the evidence.
+    """
+    return f"The {appeal_by} contests the first ruling and states: {appeal_statement}"
+
+
 def _fetch_evidence(url: str, label: str) -> str:
     """Fetch one evidence page inside a non-deterministic block."""
     try:
@@ -207,10 +230,12 @@ RESPONDENT_EVIDENCE>>>"""
         appeal_block = ""
         if context_note:
             appeal_block = f"""
-This is an appeal of an earlier ruling. Context:
+This is an appeal. You are not told what the first ruling was or how it was
+reasoned, and you must not assume anything about it. Decide anew, from the
+terms and the evidence only. Context:
 {context_note}
-Weigh the appeal statement, but it is an unverified claim: decide from the
-terms and the evidence, never from the statement alone.
+That statement is an unverified claim by a party: weigh it against the
+evidence, never accept it on its own.
 """
 
         prompt = f"""
@@ -448,10 +473,7 @@ class SlashingDisputeResolution(gl.Contract):
         claim_url = case.claim_evidence_url
         response_statement = case.response_statement
         response_url = case.response_evidence_url
-        context = (
-            f"The earlier ruling concluded: {case.reasoning}\n"
-            f"The appeal was filed by the {case.appeal_by}: {case.appeal_statement}"
-        )
+        context = _appeal_context(case.appeal_by, case.appeal_statement)
 
         ruling = _run_ruling(terms, claim_statement, claim_url, response_statement, response_url, context)
         self._apply_ruling(case, ruling)
