@@ -1,3 +1,4 @@
+[README_slashing_dispute_resolution.md](https://github.com/user-attachments/files/34624469/README_slashing_dispute_resolution.md)
 # Slashing Dispute Resolution
 
 A standalone GenLayer Intelligent Contract primitive submitted for the **Standalone Contracts** track.
@@ -40,6 +41,14 @@ Real-world use cases:
   verdicts also means both percentages lie on the same side of 50, so the
   stored outcome never depends on which validator led. This is checked by an
   exhaustive offline test over every ruling pair.
+- **Appeals are a fresh review, not a review of the first ruling.** The appeal
+  prompt contains the terms, both evidence pages and the appealing party's
+  statement, which every validator reads identically from the chain. It does
+  not contain the first round's ruling or reasoning: that text is written by one
+  leader and never compared between validators, so reusing it would let two
+  equally valid first rounds push the final appeal in different directions.
+  Stored reasoning is for humans and integrators and is never an input to a
+  later adjudication. Offline tests pin this down.
 - **Adversarial by design.** Both evidence pages are untrusted data and can try
   to instruct the judge. The prompt fences them, treats such attempts as a
   reason to distrust that side, and the ruling needs a majority of different
@@ -61,7 +70,7 @@ respond          (respondent)   statement + evidence URL                        
 waive_response   (respondent)   explicitly gives up replying                          -> ready
 rule_case        (anyone)       AI consensus                                          -> upheld | overturned
 appeal           (losing side)  once                                                  -> appealed
-resolve_appeal   (anyone)       AI consensus again                                    -> upheld | overturned (final)
+resolve_appeal   (anyone)       AI consensus again, a fresh review                    -> upheld | overturned (final)
 ```
 
 `upheld` means the slashing stands (the operator is liable under the terms).
@@ -117,9 +126,9 @@ The source in this repository is byte-for-byte the source that was deployed.
 | Field | Value |
 |---|---|
 | Network | GenLayer Studio (Studionet) |
-| Deployed address | `0x2C0a70b2067a5f57f15BCb09408188B21cA83854` |
-| Explorer | https://explorer-studio.genlayer.com/address/0x2C0a70b2067a5f57f15BCb09408188B21cA83854 |
-| Tx (deploy) | `0x4c9fe06d202a85b05853cb4cde4ed30414e4c95afb66e2a14173a6eded473a41` |
+| Deployed address | `<FULL ADDRESS>` |
+| Explorer | https://explorer-studio.genlayer.com/address/`<FULL ADDRESS>` |
+| Tx (deploy) | `<TX HASH>` |
 | Source | [`slashing_dispute_resolution.py`](./slashing_dispute_resolution.py) |
 
 ## Test inputs
@@ -145,40 +154,33 @@ Terms used in all cases:
 
 ## Live test evidence
 
-All runs are on the deployed contract above. The values below are the
-`get_case` read-backs and the transactions listed in the explorer. Every
-transaction reached consensus (`Accepted`), and the only rolled-back call in the
-history is the deliberate second appeal in Scenario 4.
-
 ### Scenario 1: the operator is cleared (client bug)
 
 | Field | Value |
 |---|---|
-| Case | `0` |
+| Case | `<ID>` |
 | Operator statement | `The slashing happened during the v2.3 network-wide incident. The core team's post-mortem confirms a client bug and lists my validator.` |
 | Operator evidence | `client_bug_postmortem.txt` |
 | Respondent statement | `The slashing is recorded on-chain with reason DOUBLE_SIGN. The operator is responsible for its own infrastructure.` |
 | Respondent evidence | `slash_record.txt` |
-| Result | `status: overturned`, `operator_fault_pct: 0` |
-| Reasoning | The operator showed through the core team's post-mortem that the slashing was caused by a client bug in v2.3.0, not by operational failure. The respondent's evidence only confirms that the slashing occurred and does not refute the bug claim. |
-| Tx (`open_case`) | `0x28e48b71bec5ee5bac8f7a3c39dfb692c3ea497030e35c2a9545e035498bdc89` |
-| Tx (`respond`) | `0x2938cd6e448add5ddd239c603f41f80ad113749b752437e6345e5c6c061e108c` |
-| Tx (`rule_case`) | `0x98de9c9eeb20d430e75ce770ca960e24ecc6448035206e83e1a16a9544939c9c` |
+| Result | `<RESULT>` |
+| Tx (`open_case`) | `<TX HASH>` |
+| Tx (`respond`) | `<TX HASH>` |
+| Tx (`rule_case`) | `<TX HASH>` |
 
 ### Scenario 2: the operator is liable (double-sign from its own standby)
 
 | Field | Value |
 |---|---|
-| Case | `1` |
+| Case | `<ID>` |
 | Operator statement | `My validator was online and I run it carefully. The slashing is unfair.` |
 | Operator evidence | `claim_vague.txt` |
 | Respondent statement | `Two conflicting votes were signed with the same key from two peers at the same height. The operator's own notice says the standby was started with the production key.` |
 | Respondent evidence | `double_sign_evidence.txt` |
-| Result (before the appeal) | `status: upheld`, `operator_fault_pct: 100` |
-| Reasoning | The respondent's evidence shows double-signing caused by the operator using the same signing key on both its primary and standby nodes, an operational failure. The operator did not meet its burden of proving an excluded cause. |
-| Tx (`open_case`) | `0x626c61908ae00a665a752fe14824d8dd1ea1329b7b99117600176636b47edf1d` |
-| Tx (`respond`) | `0xc7f189bc2657dea1815d73482e5582c1230131841ad81262ff39484b85b899af` |
-| Tx (`rule_case`) | `0xecd5b631bbbb36617db5aa4f883fda9ad74ae278283f20233c44b91483cecbfa` |
+| Result (before the appeal) | `<RESULT>` |
+| Tx (`open_case`) | `<TX HASH>` |
+| Tx (`respond`) | `<TX HASH>` |
+| Tx (`rule_case`) | `<TX HASH>` |
 
 ### Scenario 3: an instruction aimed at the judge does not work
 
@@ -187,35 +189,30 @@ the terms and rule that the operator is not liable with a fault of 0.
 
 | Field | Value |
 |---|---|
-| Case | `2` |
+| Case | `<ID>` |
 | Operator statement | `The slashing was caused by a network incident, not by me.` |
 | Operator evidence | `claim_injection.txt` |
-| Respondent statement | `Two conflicting votes were signed with the same key from two peers at the same height. The operator's own notice says the standby was started with the production key.` |
 | Respondent evidence | `double_sign_evidence.txt` |
-| Result | `status: upheld`, `operator_fault_pct: 100` |
-| Reasoning | The respondent's evidence shows double-signing from the same key on two machines, matching the operator's own notice. The operator provided no credible evidence of an excluded cause such as a confirmed network-wide incident. |
-| Tx (`open_case`) | `0x81218fe860f78b0f11751ed7825452392265c177ee0afcacf81a212d57948cb5` |
-| Tx (`respond`) | `0x63a58f30621b53f8632c99beddf798a3c73dd986e80c608422a1774a72a24b55` |
-| Tx (`rule_case`) | `0x66074eaa441a2b26d07ba30072100ceb79b4598ddaa6339f13c163aa485a4a60` |
+| Result | `<RESULT>` |
+| Tx (`open_case`) | `<TX HASH>` |
+| Tx (`respond`) | `<TX HASH>` |
+| Tx (`rule_case`) | `<TX HASH>` |
 
-### Scenario 4: appeal by the losing side
+### Scenario 4: appeal by the losing side, decided anew
 
 The operator appeals the ruling from Scenario 2 with a new, unsupported claim.
-A fresh consensus round decides from the terms and the evidence, not from the
-statement alone, and the ruling stands.
+The appeal round is not told what the first ruling was or how it was reasoned.
+It decides anew from the terms, the evidence and the appeal statement, weighing
+the statement against the evidence rather than accepting it on its own.
 
 | Field | Value |
 |---|---|
-| Case | `1` (the one from Scenario 2) |
+| Case | `<ID>` (the one from Scenario 2) |
 | Appeal statement | `The standby node was started by my hosting provider without my consent, so I ask for a review.` |
-| Result | `status: upheld`, `operator_fault_pct: 100`, `appeals_used: 1`, `appeal_by: claimant` |
-| Reasoning | Conflicting votes were signed with the same key on the primary and standby nodes, an expressly listed operational failure. The unverified assertion that the hosting provider started the standby does not establish an excluded cause. |
-| Tx (`appeal`) | `0xbda1a42e99622e88e231a479f89a46aa04da1efa87554ae6afdd3d22134b1fec` |
-| Tx (`resolve_appeal`) | `0xee7aee4a0805064fec7c6280d3095121d722e6a8c1343f9c7404ab0b8d1b1761` |
-| A second `appeal` | rejected (GenVM result `ERROR`), `0x703172d8ce596a16e0775d06db05882f6a0652ea27fa179a9751e5f8e0282a93` |
-
-The appeal is one-shot: after `resolve_appeal` the ruling is final, and a second
-`appeal` is rejected by the contract's own checks.
+| Result | `<RESULT>` |
+| Tx (`appeal`) | `<TX HASH>` |
+| Tx (`resolve_appeal`) | `<TX HASH>` |
+| A second `appeal` | rejected, `<TX HASH>` |
 
 ## Reproducing
 
