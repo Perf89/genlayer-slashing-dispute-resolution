@@ -22,6 +22,7 @@ parse = ns["_parse_llm_json"]
 agree = ns["_rulings_agree"]
 status_for = ns["_status_for"]
 losing_party = ns["_losing_party"]
+appeal_context = ns["_appeal_context"]
 THRESHOLD = ns["LIABILITY_THRESHOLD"]
 
 
@@ -151,6 +152,38 @@ def test_status_mapping():
 def test_the_losing_party_is_the_one_who_may_appeal():
     assert losing_party("upheld") == "claimant"        # operator is liable, operator loses
     assert losing_party("overturned") == "respondent"  # operator cleared, respondent loses
+
+
+# --- appeals are a fresh review: no unverified text flows back in -----------
+
+def test_appeal_context_is_built_from_party_inputs_only():
+    import inspect
+    # the helper cannot even receive a ruling text: it has exactly two inputs
+    assert list(inspect.signature(appeal_context).parameters) == ["appeal_by", "appeal_statement"]
+    text = appeal_context("claimant", "The standby was started by my host.")
+    assert "claimant" in text and "The standby was started by my host." in text
+    assert text == appeal_context("claimant", "The standby was started by my host.")  # deterministic
+
+
+def test_resolve_appeal_never_reads_the_stored_reasoning():
+    # Review finding: the first round's reasoning is written by one leader and
+    # never compared between validators, so it must not feed the appeal round.
+    body = SRC[SRC.index("def resolve_appeal"):SRC.index("# Internals and views")]
+    assert ".reasoning" not in body
+    assert "_appeal_context(case.appeal_by, case.appeal_statement)" in body
+    assert "earlier ruling concluded" not in SRC
+
+
+def test_stored_reasoning_is_only_written_and_displayed():
+    # the only two places that touch `reasoning` on a stored case
+    uses = [l.strip() for l in SRC.splitlines() if ".reasoning" in l]
+    assert uses == ['case.reasoning = ruling["reasoning"]', '"reasoning": c.reasoning,'], uses
+
+
+def test_appeal_prompt_does_not_mention_an_earlier_conclusion():
+    block = SRC[SRC.index('appeal_block = ""'):SRC.index("prompt = f")]
+    assert "earlier" not in block.lower() or "not told" in block.lower()
+    assert "{case." not in block and "reasoning" not in block.lower()
 
 
 # --- regressions from earlier GenLayer contracts ----------------------------
